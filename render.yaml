@@ -10,6 +10,8 @@ services:
         value: /var/data/focus.db
       - key: FOCUS_ADMIN_EMAILS
         sync: false
+      - key: FOCUS_ALLOWED_ORIGIN
+        value: https://focus.com
     disk:
       name: focus-data
       mountPath: /var/data
