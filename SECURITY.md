@@ -11,6 +11,10 @@ run code inside dedicated containers or VMs with a non-root user, isolated or
 disabled networking, a read-only filesystem, strict resource limits, and no
 access to application secrets.
 
+Go traces invoke the installed Go toolchain and use a shared build cache under
+`FOCUS_GO_CACHE` (default `/tmp/focus-go-cache`). Keep that cache outside any
+user-facing static directory and isolate the entire worker before public use.
+
 ## Authentication
 
 Passwords are stored as PBKDF2-HMAC-SHA256 hashes with per-user salts. Sessions

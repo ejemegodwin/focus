@@ -23,7 +23,23 @@ class TracePythonTests(unittest.TestCase):
     def test_error_is_returned_without_losing_events(self):
         result = trace_python("value = 1\nprint(missing)")
         self.assertIn("NameError", result["error"])
+        self.assertIn("could not find that name", result["error_hint"])
         self.assertEqual(result["output"], "")
+
+    @unittest.skipUnless(__import__("shutil").which("go"), "Go toolchain is not installed")
+    def test_go_trace_returns_executed_lines_and_output(self):
+        from trace_service import trace_go
+        result = trace_go('package main\n\nimport "fmt"\n\nfunc main() {\n\tx := 1\n\tfmt.Println(x)\n}')
+        self.assertEqual([event["line"] for event in result["steps"]], [6, 7])
+        self.assertEqual(result["output"], "1\n")
+        self.assertIsNone(result["error"])
+
+    @unittest.skipUnless(__import__("shutil").which("go"), "Go toolchain is not installed")
+    def test_go_compile_error_has_plain_language_hint(self):
+        from trace_service import trace_go
+        result = trace_go("package main\nfunc main() {\n\tprintln(missing)\n}")
+        self.assertIn("undefined", result["error"])
+        self.assertIn("could not find this name", result["error_hint"])
 
     def test_step_limit_stops_infinite_loop(self):
         result = trace_python("while True:\n    pass", max_steps=4)

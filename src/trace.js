@@ -8,12 +8,12 @@ export function normalizeTrace(result) {
   }))
 }
 
-export async function traceCode(code, fetcher = fetch) {
+export async function traceCode(code, language = 'python', fetcher = fetch) {
   const endpoint = import.meta.env.VITE_TRACE_API_URL || '/api/trace'
   const response = await fetcher(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify({ code, language }),
   })
   let result
   try {
@@ -21,6 +21,6 @@ export async function traceCode(code, fetcher = fetch) {
   } catch {
     throw new Error(`Trace service returned HTTP ${response.status}`)
   }
-  if (!response.ok || result.error) throw new Error(result.error || `Trace service returned HTTP ${response.status}`)
+  if (!response.ok) throw new Error(result.error || `Trace service returned HTTP ${response.status}`)
   return { ...result, steps: normalizeTrace(result) }
 }

@@ -13,6 +13,17 @@ const example = `def fibonacci(n):
 result = fibonacci(4)
 print(result)`
 
+const goExample = `package main
+
+import "fmt"
+
+func main() {
+	values := []int{1, 2, 3}
+	for _, value := range values {
+		fmt.Println(value)
+	}
+}`
+
 const snapshots = [
   { line: 1, label: 'def fibonacci(n):', values: [{ name: 'n', value: '4', type: 'int' }, { name: 'result', value: '—', type: 'not defined' }], stack: ['global'] },
   { line: 6, label: 'result = fibonacci(4)', values: [{ name: 'n', value: '4', type: 'int' }, { name: 'result', value: '—', type: 'not defined' }], stack: ['global'] },
@@ -314,10 +325,12 @@ function App() {
   const [activeView, setActiveView] = useState('dashboard')
   const [adminMode, setAdminMode] = useState(false)
   const [code, setCode] = useState(() => readStorage('focus-draft-code', example))
+  const [language, setLanguage] = useState('python')
   const [step, setStep] = useState(5)
   const [running, setRunning] = useState(false)
   const [steps, setSteps] = useState(snapshots)
   const [status, setStatus] = useState('Demo trace loaded')
+  const [errorHint, setErrorHint] = useState('')
   const canManagePlatform = canAccessAdmin(user)
   const snapshot = steps[step] || steps[0]
   const lineGuide = explainLine(snapshot.label, snapshot)
@@ -355,10 +368,15 @@ function App() {
   const move = (delta) => setStep((current) => Math.min(Math.max(current + delta, 0), steps.length - 1))
   const runTrace = async () => {
     setRunning(true)
+    setErrorHint('')
     setStatus('Tracing your code…')
     try {
-      const result = await traceCode(code)
-      if (result.error) throw new Error(result.error)
+      const result = await traceCode(code, language)
+      if (result.error) {
+        setStatus(`Trace stopped · ${result.error.split('\n')[0]}`)
+        setErrorHint(result.error_hint || 'Check the reported line and inspect the values it receives.')
+        return
+      }
       const nextSteps = result.steps
       setSteps(nextSteps.length ? nextSteps : [{ line: 1, label: 'No executable statements', values: [], stack: ['global'] }])
       setStep(0)
@@ -398,7 +416,7 @@ function App() {
     setAdminMode(false)
     setActiveView('dashboard')
   }
-  const openVisualizer = (visualizerCode = example) => { setCode(visualizerCode); setStep(0); setActiveView('visualizer') }
+  const openVisualizer = (visualizerCode = example, visualizerLanguage = 'python') => { const inferredLanguage = visualizerCode.trimStart().startsWith('package main') ? 'go' : visualizerLanguage; setCode(visualizerCode); setLanguage(inferredLanguage); setStep(0); setActiveView('visualizer') }
   useEffect(() => {
     if (activeView === 'admin' && !canManagePlatform) {
       setActiveView('dashboard')
@@ -418,13 +436,13 @@ function App() {
     {activeView === 'visualizer' && <>
     <section className="workspace-header">
       <div><p className="eyebrow">CODE EXECUTION VISUALIZER</p><h1>See your code think.</h1><p className="subtitle">Trace every decision, variable, and function call as your program runs.</p></div>
-      <div className="language-select"><Code2 size={17} /><span>Python</span><ChevronDown size={16} /></div>
+      <label className="language-select"><Code2 size={17} /><select aria-label="Programming language" value={language} onChange={(event) => { const next = event.target.value; setLanguage(next); setCode(next === 'go' ? goExample : example); setStep(0); setStatus('Demo trace loaded'); setErrorHint('') }}><option value="python">Python</option><option value="go">Go</option></select><ChevronDown size={16} /></label>
     </section>
     <section className="visualizer">
       <div className="panel editor-panel">
         <div className="panel-heading"><span>EDITOR</span><button className="reset-button" onClick={() => setCode(example)}><RotateCcw size={14} /> Reset</button></div>
         <div className="editor-body"><div className="line-numbers">{lines.map((_, index) => <span className={index + 1 === snapshot.line ? 'active-number' : ''} key={index}>{index + 1}</span>)}</div><textarea spellCheck="false" value={code} onChange={(event) => setCode(event.target.value)} /></div>
-        <div className="editor-footer"><button className="run-button" onClick={runTrace} disabled={running}><Play size={15} fill="currentColor" /> {running ? 'Tracing…' : 'Run visualization'}</button><span className="shortcut">{status}</span></div>
+        <div className="editor-footer"><button className="run-button" onClick={runTrace} disabled={running}><Play size={15} fill="currentColor" /> {running ? 'Tracing…' : 'Run visualization'}</button><span className="shortcut">{status}</span>{errorHint && <span className="trace-error-hint"><strong>Why:</strong> {errorHint}</span>}</div>
       </div>
       <div className="panel state-panel">
         <div className="panel-heading"><span>PROGRAM STATE</span><span className="step-count">STEP {step + 1} <i>/</i> {steps.length}</span></div>

@@ -1,6 +1,6 @@
 const exampleCode = {
   Python: 'value = 2\\nresult = value * 3\\nprint(result)',
-  Go: 'package main\\nimport \"fmt\"\\nfunc main() { fmt.Println(\"Focus\") }',
+  Go: 'package main\\n\\nimport \"fmt\"\\n\\nfunc main() {\\n\\tvalues := []int{1, 2, 3}\\n\\tfor _, value := range values {\\n\\t\\tfmt.Println(value)\\n\\t}\\n}',
   JavaScript: 'const values = [1, 2, 3]\\nconsole.log(values.map(value => value * 2))',
   Java: 'class Main { public static void main(String[] args) { System.out.println(\"Focus\"); } }',
   Rust: 'fn main() { let values = vec![1, 2, 3]; println!(\"{:?}\", values); }',

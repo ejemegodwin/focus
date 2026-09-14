@@ -156,6 +156,10 @@ class FocusHandler(BaseHTTPRequestHandler):
                 return
             request = json.loads(body)
             code = request.get("code", "")
+            language = request.get("language", "python").lower()
+            if language not in {"python", "go"}:
+                self._send(400, {"error": "language must be python or go."})
+                return
             if not isinstance(code, str) or len(code) > 20_000:
                 self._send(400, {"error": "Code must be a string under 20,000 characters."})
                 return
@@ -163,7 +167,7 @@ class FocusHandler(BaseHTTPRequestHandler):
             if not isinstance(max_steps, int) or isinstance(max_steps, bool) or not 1 <= max_steps <= 2_000:
                 self._send(400, {"error": "max_steps must be an integer between 1 and 2,000."})
                 return
-            self._send(200, run_trace(code, max_steps=max_steps))
+            self._send(200, run_trace(code, language=language, max_steps=max_steps))
         except TraceExecutionError as error:
             self._send(408, {"error": str(error)})
         except (ValueError, json.JSONDecodeError):

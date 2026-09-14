@@ -19,13 +19,14 @@ class TraceExecutionError(RuntimeError):
     """Raised when the trace worker cannot return a valid result."""
 
 
-def _limit_child() -> None:
+def _limit_child(language: str = "python") -> None:
     """Apply inexpensive POSIX limits before the worker starts."""
     try:
         import resource
 
         cpu_seconds = 2
         memory_bytes = 256 * 1024 * 1024
+        cpu_seconds = 30 if language == "go" else 2
         resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds))
         resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
         resource.setrlimit(resource.RLIMIT_FSIZE, (1 * 1024 * 1024, 1 * 1024 * 1024))
@@ -37,7 +38,7 @@ def _limit_child() -> None:
         pass
 
 
-def run_trace(source: str, *, max_steps: int = 500, timeout: float = 3.0) -> dict[str, Any]:
+def run_trace(source: str, *, language: str = "python", max_steps: int = 500, timeout: float = 3.0) -> dict[str, Any]:
     """Trace source outside the API process and return its JSON result."""
     if not isinstance(source, str) or len(source) > 20_000:
         raise ValueError("code must be a string under 20,000 characters")
@@ -45,17 +46,19 @@ def run_trace(source: str, *, max_steps: int = 500, timeout: float = 3.0) -> dic
         raise ValueError("max_steps must be between 1 and 2,000")
 
     worker = Path(__file__).with_name("trace_worker.py")
-    request = json.dumps({"code": source, "max_steps": max_steps})
+    if language not in {"python", "go"}:
+        raise ValueError("language must be python or go")
+    request = json.dumps({"code": source, "language": language, "max_steps": max_steps})
     try:
         completed = subprocess.run(
             [sys.executable, os.fspath(worker)],
             input=request,
             text=True,
             capture_output=True,
-            timeout=timeout,
+            timeout=35.0 if language == "go" else timeout,
             cwd=os.fspath(worker.parent),
             env={"PATH": os.environ.get("PATH", ""), "PYTHONIOENCODING": "utf-8"},
-            preexec_fn=_limit_child if os.name == "posix" else None,
+            preexec_fn=(lambda: _limit_child(language)) if os.name == "posix" else None,
             check=False,
         )
     except subprocess.TimeoutExpired as error:
@@ -71,4 +74,3 @@ def run_trace(source: str, *, max_steps: int = 500, timeout: float = 3.0) -> dic
     if not isinstance(result, dict) or not isinstance(result.get("steps"), list):
         raise TraceExecutionError("Trace worker returned an invalid result.")
     return result
-

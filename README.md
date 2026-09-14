@@ -263,7 +263,8 @@ service without these protections.
 - SQLite is intended for development or a small single-service deployment.
 - Account recovery, email verification, password reset, and MFA are not yet
   implemented.
-- The supported visualized language is currently Python.
+- Python and Go are supported by the visualizer. Go tracing requires the Go
+  toolchain to be installed on the API host.
 
 ## License
 
