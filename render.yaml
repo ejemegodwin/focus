@@ -8,6 +8,8 @@ services:
     envVars:
       - key: FOCUS_DB_PATH
         value: /var/data/focus.db
+      - key: FOCUS_ADMIN_EMAILS
+        sync: false
     disk:
       name: focus-data
       mountPath: /var/data

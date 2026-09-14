@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import threading
+import time
+from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -14,9 +17,49 @@ from sandbox_runner import TraceExecutionError, run_trace
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR = PROJECT_ROOT / "dist"
+MAX_BODY_BYTES = 25_000
+RATE_LIMITS = {
+    "/api/trace": (30, 60),
+    "/api/auth/session": (10, 60),
+}
+REQUESTS: dict[tuple[str, str], deque[float]] = defaultdict(deque)
+REQUESTS_LOCK = threading.Lock()
 
 
 class FocusHandler(BaseHTTPRequestHandler):
+    def _client_ip(self):
+        return self.client_address[0]
+
+    def _rate_limited(self, path: str):
+        policy = RATE_LIMITS.get(path)
+        if not policy:
+            return False
+        limit, window = policy
+        now = time.monotonic()
+        key = (self._client_ip(), path)
+        with REQUESTS_LOCK:
+            requests = REQUESTS[key]
+            while requests and requests[0] <= now - window:
+                requests.popleft()
+            if len(requests) >= limit:
+                return True
+            requests.append(now)
+        return False
+
+    def _body(self):
+        try:
+            length = int(self.headers.get("Content-Length", "-1"))
+        except ValueError:
+            self._send(400, {"error": "Content-Length must be a valid integer."})
+            return None
+        if length < 0:
+            self._send(411, {"error": "Content-Length is required."})
+            return None
+        if length > MAX_BODY_BYTES:
+            self._send(413, {"error": f"Request body must be under {MAX_BODY_BYTES} bytes."})
+            return None
+        return self.rfile.read(length)
+
     def _send(self, status: int, payload: dict, cookie: str | None = None):
         body = json.dumps(payload).encode()
         self.send_response(status)
@@ -80,10 +123,18 @@ class FocusHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
+        if self._rate_limited(path):
+            self.send_response(429)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Retry-After", "60")
+            self.end_headers()
+            return
         if path == "/api/auth/session":
             try:
-                length = int(self.headers.get("Content-Length", "0"))
-                request = json.loads(self.rfile.read(length))
+                body = self._body()
+                if body is None:
+                    return
+                request = json.loads(body)
                 token, user = start_session(
                     request.get("name", ""),
                     request.get("email", ""),
@@ -100,8 +151,10 @@ class FocusHandler(BaseHTTPRequestHandler):
             self._send(404, {"error": "Not found"})
             return
         try:
-            length = int(self.headers.get("Content-Length", "0"))
-            request = json.loads(self.rfile.read(length))
+            body = self._body()
+            if body is None:
+                return
+            request = json.loads(body)
             code = request.get("code", "")
             if not isinstance(code, str) or len(code) > 20_000:
                 self._send(400, {"error": "Code must be a string under 20,000 characters."})

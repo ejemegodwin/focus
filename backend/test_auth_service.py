@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import os
 from pathlib import Path
 
 import auth_service
@@ -9,10 +10,10 @@ class AuthServiceTests(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         auth_service.DB_PATH = Path(self.temp_dir.name) / "focus.db"
-        auth_service.SESSIONS.clear()
+        os.environ["FOCUS_ADMIN_EMAILS"] = "ejeme@example.com"
 
     def tearDown(self):
-        auth_service.SESSIONS.clear()
+        os.environ.pop("FOCUS_ADMIN_EMAILS", None)
         self.temp_dir.cleanup()
 
     def test_ejeme_is_the_only_admin_seed(self):

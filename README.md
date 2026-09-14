@@ -26,7 +26,7 @@ Focus is a code-execution visualizer for teaching programming through program st
 - Existing users can sign in from another device with their email and password.
 - Sessions use an HttpOnly cookie managed by the API.
 - Passwords use PBKDF2-HMAC-SHA256 with a per-user salt.
-- The first account named `Ejeme Godwin` receives the admin role.
+- Admin access is assigned to emails listed in `FOCUS_ADMIN_EMAILS`.
 - Later accounts receive the learner role.
 
 ### Dashboards
@@ -141,6 +141,12 @@ Git. Use another location with:
 
 ```bash
 FOCUS_DB_PATH=/path/to/focus.db python backend/server.py
+```
+
+Set the comma-separated admin email allowlist when running the API:
+
+```bash
+FOCUS_ADMIN_EMAILS=ejeme@example.com python backend/server.py
 ```
 
 To reset local accounts, stop the API and remove `backend/focus.db`.
