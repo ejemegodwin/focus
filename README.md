@@ -12,6 +12,8 @@ Focus is a code-execution visualizer for teaching programming through program st
 - Displays variables, values, types, and the call stack.
 - Supports play, pause, previous step, next step, reset, and animated playback.
 - Captures program output and runtime errors.
+- Includes an active-recall mode where learners predict program output before
+  checking the execution trace.
 
 ### Learning paths
 

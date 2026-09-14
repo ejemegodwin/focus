@@ -318,6 +318,10 @@ function explainLine(line, snapshot) {
   return { title: 'Execute this statement', body: 'Python evaluates this line from left to right according to the language rules. Look for values being read, operations being performed, and names or objects that may change.', state: `At this moment the visible variables are ${variables}.` }
 }
 
+function normalizeOutput(value) {
+  return String(value || '').trim().split(/\s+/).filter(Boolean).join(' ')
+}
+
 function App() {
   const [user, setUser] = useState(() => readStorage('focus-user', null))
   const [authOpen, setAuthOpen] = useState(false)
@@ -331,6 +335,10 @@ function App() {
   const [steps, setSteps] = useState(snapshots)
   const [status, setStatus] = useState('Demo trace loaded')
   const [errorHint, setErrorHint] = useState('')
+  const [prediction, setPrediction] = useState('')
+  const [predictionOpen, setPredictionOpen] = useState(false)
+  const [predictionFeedback, setPredictionFeedback] = useState('')
+  const [checkingPrediction, setCheckingPrediction] = useState(false)
   const canManagePlatform = canAccessAdmin(user)
   const snapshot = steps[step] || steps[0]
   const lineGuide = explainLine(snapshot.label, snapshot)
@@ -396,6 +404,31 @@ function App() {
       setStatus(`Trace failed · ${error.message}`)
     } finally { setRunning(false) }
   }
+  const checkPrediction = async () => {
+    if (!prediction.trim()) {
+      setPredictionFeedback('Write your predicted output before checking it.')
+      return
+    }
+    setCheckingPrediction(true)
+    setPredictionFeedback('Running the program…')
+    try {
+      const result = await traceCode(code, language)
+      if (result.error) {
+        setPredictionFeedback(result.error_hint || 'The program failed before it produced a result.')
+        return
+      }
+      const actual = normalizeOutput(result.output)
+      const guess = normalizeOutput(prediction)
+      setPredictionFeedback(actual === guess ? 'Correct prediction. Now step through the trace to see why.' : `Not quite. The program produced: ${actual || '(no output)'}`)
+      setSteps(result.steps.length ? result.steps : [{ line: 1, label: 'No executable statements', values: [], stack: ['global'] }])
+      setStep(0)
+      setStatus(`Prediction checked · ${result.steps.length} steps`)
+    } catch (error) {
+      setPredictionFeedback(`Could not check prediction: ${error.message}`)
+    } finally {
+      setCheckingPrediction(false)
+    }
+  }
 
   const signIn = async (account, password, createAccount = false) => {
     const response = await fetch('/api/auth/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ ...account, password, create_account: createAccount }) })
@@ -442,7 +475,8 @@ function App() {
       <div className="panel editor-panel">
         <div className="panel-heading"><span>EDITOR</span><button className="reset-button" onClick={() => setCode(example)}><RotateCcw size={14} /> Reset</button></div>
         <div className="editor-body"><div className="line-numbers">{lines.map((_, index) => <span className={index + 1 === snapshot.line ? 'active-number' : ''} key={index}>{index + 1}</span>)}</div><textarea spellCheck="false" value={code} onChange={(event) => setCode(event.target.value)} /></div>
-        <div className="editor-footer"><button className="run-button" onClick={runTrace} disabled={running}><Play size={15} fill="currentColor" /> {running ? 'Tracing…' : 'Run visualization'}</button><span className="shortcut">{status}</span>{errorHint && <span className="trace-error-hint"><strong>Why:</strong> {errorHint}</span>}</div>
+        <div className="editor-footer"><button className="run-button" onClick={runTrace} disabled={running}><Play size={15} fill="currentColor" /> {running ? 'Tracing…' : 'Run visualization'}</button><button className="predict-button" onClick={() => { setPredictionOpen((open) => !open); setPredictionFeedback('') }}>Predict output</button><span className="shortcut">{status}</span>{errorHint && <span className="trace-error-hint"><strong>Why:</strong> {errorHint}</span>}</div>
+        {predictionOpen && <div className="prediction-card"><div><span className="card-kicker">ACTIVE RECALL</span><strong>What will this program print?</strong><small>Write the output before running the trace. Separate multiple lines with spaces or new lines.</small></div><textarea value={prediction} onChange={(event) => { setPrediction(event.target.value); setPredictionFeedback('') }} placeholder="Your predicted output" rows={2} /><div className="prediction-actions"><button className="run-button" onClick={checkPrediction} disabled={checkingPrediction}>{checkingPrediction ? 'Checking…' : 'Check prediction'}</button>{predictionFeedback && <span className={predictionFeedback.startsWith('Correct') ? 'prediction-correct' : 'prediction-feedback'}>{predictionFeedback}</span>}</div></div>}
       </div>
       <div className="panel state-panel">
         <div className="panel-heading"><span>PROGRAM STATE</span><span className="step-count">STEP {step + 1} <i>/</i> {steps.length}</span></div>
