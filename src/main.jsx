@@ -39,7 +39,6 @@ function readStorage(key, fallback) {
 }
 
 const ANALYTICS_KEY = 'focus-analytics'
-const ADMIN_NAME = 'ejeme godwin'
 
 function canAccessAdmin(account) {
   return account?.role === 'admin'
@@ -60,6 +59,11 @@ function recordAnalytics(event) {
 function eventDate(event) {
   const date = new Date(event.timestamp)
   return Number.isNaN(date.getTime()) ? new Date(0) : date
+}
+
+function csvSafe(value) {
+  const text = String(value ?? '')
+  return /^[=+\-@]/.test(text) ? `'${text}` : text
 }
 
 function AdminDashboard({ onOpenVisualizer, user, progress }) {
@@ -96,7 +100,7 @@ function AdminDashboard({ onOpenVisualizer, user, progress }) {
   const exportCsv = () => {
     const header = ['Learner', 'Email', 'Session', 'Timestamp', 'Steps', 'Completion', 'Error']
     const rows = filtered.map((event) => [event.name || '', event.email || '', event.title || '', event.timestamp || '', event.steps || 0, `${Math.round(event.completion || 0)}%`, event.error || ''])
-    const csv = [header, ...rows].map((row) => row.map((value) => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n')
+    const csv = [header, ...rows].map((row) => row.map((value) => `"${csvSafe(value).replaceAll('"', '""')}"`).join(',')).join('\n')
     const link = document.createElement('a')
     link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
     link.download = `focus-activity-${range.toLowerCase().replaceAll(' ', '-')}.csv`
@@ -111,17 +115,11 @@ function AdminDashboard({ onOpenVisualizer, user, progress }) {
   </section>
 }
 
-async function hashPassword(password) {
-  const bytes = new TextEncoder().encode(password)
-  const digest = await crypto.subtle.digest('SHA-256', bytes)
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
-}
-
 function AuthModal({ onClose, onSignIn }) {
   const savedUser = readStorage('focus-user', {})
   const [mode, setMode] = useState('signin')
   const [name, setName] = useState(savedUser.name || '')
-  const [email, setEmail] = useState(savedUser.email || 'ejeme@example.com')
+  const [email, setEmail] = useState(savedUser.email || '')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')

@@ -16,7 +16,7 @@ class AuthServiceTests(unittest.TestCase):
         os.environ.pop("FOCUS_ADMIN_EMAILS", None)
         self.temp_dir.cleanup()
 
-    def test_ejeme_is_the_only_admin_seed(self):
+    def test_only_allowlisted_email_gets_admin(self):
         admin_token, admin = auth_service.start_session("Ejeme Godwin", "ejeme@example.com", "password123", True)
         learner_token, learner = auth_service.start_session("Jordan Davis", "jordan@example.com", "password123", True)
         duplicate_token, duplicate = auth_service.start_session("Ejeme Godwin", "another@example.com", "password123", True)
