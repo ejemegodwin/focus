@@ -268,6 +268,10 @@ function CourseLessonDetail({ language, lesson, lessonIndex, lessonCount, comple
   return <section className="lesson-shell"><button className="back-link" onClick={onBack}><ChevronRight size={15} /> All learning paths</button><div className="lesson-hero"><div><span className="card-kicker">{language.toUpperCase()} · LESSON {lessonIndex + 1} OF {lessonCount}</span><h1>{lesson.title}</h1><p>{lesson.summary}</p></div><div className={`lesson-hero-mark language-mark ${tracks[language].color}`}>{tracks[language].mark}</div></div><div className="lesson-columns"><article className="lesson-content"><div className="lesson-section"><span className="card-kicker">LEARNING OBJECTIVES</span><h2>By the end of this lesson, you will be able to…</h2>{lesson.objectives.map((objective) => <div className="objective" key={objective}><CheckCircle2 size={17} /><span>{objective}</span></div>)}</div><div className="lesson-section lesson-explanation"><span className="card-kicker">DETAILED EXPLANATION</span><h2>{lesson.title}, explained</h2><p>{lesson.explanation}</p><p>Read the example as a sequence of state changes. Do not jump straight to the final output: ask what each line receives, what it produces, and whether it mutates existing state or creates a new value. That habit is the transferable skill this lesson is teaching.</p><div className="lesson-guide"><span className="card-kicker">HOW TO STUDY THIS EXAMPLE</span>{lesson.guide.map((step, index) => <div className="guide-step" key={step}><b>{index + 1}</b><span>{step}</span></div>)}</div><div className="concept-code"><span>WORKED EXAMPLE</span><code>{lesson.code.split('\n').map((line, index) => <React.Fragment key={`${index}-${line}`}>{index > 0 && <br />}{line}</React.Fragment>)}</code><div className="concept-state"><small>LESSON</small><strong>{lessonIndex + 1} <i>/ {lessonCount}</i></strong></div></div><div className="pitfall-note"><strong>Common pitfall</strong><span>{lesson.pitfalls}</span></div></div><div className="lesson-section exercise-section exercise-gate"><span className="card-kicker">PASS TO CONTINUE · +25 XP</span><h2>Now solve a variation</h2><p>{lesson.exercise.prompt} Your answer must be different from the starter and must pass the checker before the next lesson unlocks.</p><div className="checker-list"><span><CheckCircle2 size={13} /> Required lesson concepts</span><span><CheckCircle2 size={13} /> No runtime errors</span><span><CheckCircle2 size={13} /> Expected behavior/output</span><span><CheckCircle2 size={13} /> No reused answers</span></div><textarea className="exercise-editor" spellCheck="false" value={answer} onChange={(event) => { setAnswer(event.target.value); setFeedback('') }} /><div className="exercise-actions"><button className="hint-button" onClick={() => setShowHint((visible) => !visible)}>{showHint ? 'Hide hint' : 'Need a hint?'}</button><button className="run-button" onClick={checkExercise} disabled={checking || completed}><CheckCircle2 size={15} /> {checking ? 'Checking…' : completed ? 'Exercise passed' : 'Check exercise'}</button>{feedback && <span className={`exercise-feedback ${completed ? 'passed' : ''}`}>{feedback}</span>}</div>{showHint && <div className="exercise-hint">Try using: {lesson.exercise.requiredTokens.join(', ')}. The hint names the building blocks, not the solution.</div>}</div><div className="lesson-navigation"><button className="back-link" onClick={onBack}>Exit lesson</button>{lessonIndex === lessonCount - 1 ? <button className="run-button" disabled={!completed} onClick={onBack}><Trophy size={15} /> Finish course</button> : <button className="run-button" disabled={!completed} onClick={onNext}>Next lesson <ArrowUpRight size={15} /></button>}</div></article><aside className="lesson-sidebar"><div className="lesson-progress-card"><span className="card-kicker">COURSE PROGRESS</span><strong>{completion}%</strong><div className="progress-track"><div style={{ width: `${completion}%` }}></div></div><span>Lesson {lessonIndex + 1} of {lessonCount}</span></div><div className="lesson-sidebar-card"><span className="card-kicker">{completed ? 'UNLOCKED' : 'LOCKED'}</span><h3>{completed ? (lessonIndex === lessonCount - 1 ? 'Course complete' : tracks[language].lessons[lessonIndex + 1].title) : 'Pass the exercise'}</h3><p>{completed ? 'Your exercise is complete. Continue when you are ready.' : 'The next lesson unlocks after your answer passes every checker.'}</p></div></aside></div></section>
 }
 
+function CurriculumOverview({ levels }) {
+  return <div className="curriculum-overview"><span className="card-kicker">THE PYTHON PATH</span><div className="curriculum-levels">{levels.map((level, index) => <div className="curriculum-level" key={level.title}><span className="curriculum-number">0{index + 1}</span><div><strong>{level.title.replace(/^Level \d+ · /, '')}</strong><small>{level.checkpoint}</small></div></div>)}</div></div>
+}
+
 function StudyArea({ onOpenVisualizer, progress }) {
   const [selected, setSelected] = useState('Python')
   const [learning, setLearning] = useState(false)
@@ -278,7 +282,7 @@ function StudyArea({ onOpenVisualizer, progress }) {
   const lessonKey = `${selected}-${lessonIndex}`
   const openLesson = (index = 0) => { setLessonIndex(index); setLearning(true) }
   if (learning) return <CourseLessonDetail language={selected} lesson={course.lessons[lessonIndex]} lessonIndex={lessonIndex} lessonCount={course.lessons.length} completed={Boolean(completedLessons[lessonKey])} previousAnswers={passedAnswers[selected] || []} onComplete={(answer) => { setCompletedLessons((current) => { const next = { ...current, [lessonKey]: true }; localStorage.setItem('focus-course-completions', JSON.stringify(next)); return next }); setPassedAnswers((current) => { const next = { ...current, [selected]: [...(current[selected] || []), answer] }; localStorage.setItem('focus-course-answers', JSON.stringify(next)); return next }) }} onBack={() => setLearning(false)} onNext={() => setLessonIndex((index) => Math.min(index + 1, course.lessons.length - 1))} onOpenVisualizer={onOpenVisualizer} />
-  return <section className="study-shell"><div className="study-heading"><div><p className="eyebrow">THE FOCUS CURRICULUM</p><h1>Learn by seeing it run.</h1><p className="subtitle">Complete courses, guided examples, and execution traces for every language.</p></div><div className="study-stats"><div><Trophy size={15} /><strong>{progress.challenges}</strong><span>challenges cleared</span></div><div><Terminal size={15} /><strong>{progress.steps}</strong><span>steps explored</span></div></div></div><div className="language-picker"><div className="picker-heading"><div><span className="card-kicker">CHOOSE YOUR PATH</span><h2>What do you want to learn?</h2></div><span className="language-count">{Object.keys(tracks).length} complete paths</span></div><div className="language-grid">{Object.entries(tracks).map(([name, item]) => <button key={name} className={`language-card ${selected === name ? 'language-selected' : ''}`} onClick={() => { setSelected(name); setLessonIndex(0) }}><div className={`language-mark ${item.color}`}>{item.mark}</div><div className="language-info"><strong>{name}</strong><span>{item.lessons.length} guided lessons</span></div><ChevronRight size={16} /></button>)}</div></div><div className="path-layout"><div className="path-card"><div className="path-title"><div className={`language-mark ${course.color}`}>{course.mark}</div><div><span className="card-kicker">COMPLETE COURSE</span><h2>{selected} curriculum</h2></div><span className="available-pill">{course.lessons.length} lessons</span></div><p>{course.description}</p><div className="path-progress"><div><span>Course progress</span><b>{Object.keys(completedLessons).filter((key) => key.startsWith(`${selected}-`)).length} / {course.lessons.length}</b></div><div className="progress-track"><div style={{ width: `${Math.min(100, Math.round((Object.keys(completedLessons).filter((key) => key.startsWith(`${selected}-`)).length / Math.max(course.lessons.length, 1)) * 100))}%` }}></div></div></div><div className="lesson-list">{course.lessons.map((lesson, index) => { const completed = Boolean(completedLessons[`${selected}-${index}`]); const unlocked = index === 0 || Boolean(completedLessons[`${selected}-${index - 1}`]); return <button key={lesson.title} disabled={!unlocked} onClick={() => openLesson(index)}><span className={`lesson-check ${completed ? 'complete' : ''}`}>{completed && <CheckCircle2 size={14} />}</span><span><strong>{index + 1}. {lesson.title}</strong><small>{completed ? 'Exercise passed · ' : unlocked ? '' : 'Locked · pass the previous exercise · '}Detailed guide · example · exercise</small></span>{unlocked ? <ChevronRight size={15} /> : <Lock size={14} />}</button> })}</div><button className="run-button path-cta" onClick={() => openLesson(0)}><BookOpen size={15} /> Start {selected} course</button></div><div className="study-tip"><div className="tip-icon"><Sparkles size={17} /></div><span className="card-kicker">HOW FOCUS WORKS</span><h3>Every lesson ends at the moment code becomes understandable.</h3><p>Read the explanation, study the worked example, pass the exercise, then continue to the next concept.</p><button className="text-action" onClick={() => openLesson(0)}>Start the course <ArrowUpRight size={14} /></button></div></div></section>
+  return <section className="study-shell"><div className="study-heading"><div><p className="eyebrow">THE FOCUS CURRICULUM</p><h1>Learn by seeing it run.</h1><p className="subtitle">Complete courses, guided examples, and execution traces for every language.</p></div><div className="study-stats"><div><Trophy size={15} /><strong>{progress.challenges}</strong><span>challenges cleared</span></div><div><Terminal size={15} /><strong>{progress.steps}</strong><span>steps explored</span></div></div></div><div className="language-picker"><div className="picker-heading"><div><span className="card-kicker">CHOOSE YOUR PATH</span><h2>What do you want to learn?</h2></div><span className="language-count">{Object.keys(tracks).length} complete paths</span></div><div className="language-grid">{Object.entries(tracks).map(([name, item]) => <button key={name} className={`language-card ${selected === name ? 'language-selected' : ''}`} onClick={() => { setSelected(name); setLessonIndex(0) }}><div className={`language-mark ${item.color}`}>{item.mark}</div><div className="language-info"><strong>{name}</strong><span>{item.lessons.length} guided lessons</span></div><ChevronRight size={16} /></button>)}</div></div><div className="path-layout"><div className="path-card"><div className="path-title"><div className={`language-mark ${course.color}`}>{course.mark}</div><div><span className="card-kicker">COMPLETE COURSE</span><h2>{selected} curriculum</h2></div><span className="available-pill">{course.lessons.length} lessons</span></div><p>{course.description}</p><div className="path-progress"><div><span>Course progress</span><b>{Object.keys(completedLessons).filter((key) => key.startsWith(`${selected}-`)).length} / {course.lessons.length}</b></div><div className="progress-track"><div style={{ width: `${Math.min(100, Math.round((Object.keys(completedLessons).filter((key) => key.startsWith(`${selected}-`)).length / Math.max(course.lessons.length, 1)) * 100))}%` }}></div></div></div><div className="lesson-list">{course.lessons.map((lesson, index) => { const completed = Boolean(completedLessons[`${selected}-${index}`]); const unlocked = index === 0 || Boolean(completedLessons[`${selected}-${index - 1}`]); return <button key={lesson.title} disabled={!unlocked} onClick={() => openLesson(index)}><span className={`lesson-check ${completed ? 'complete' : ''}`}>{completed && <CheckCircle2 size={14} />}</span><span><strong>{index + 1}. {lesson.title}</strong><small>{completed ? 'Exercise passed · ' : unlocked ? '' : 'Locked · pass the previous exercise · '}Detailed guide · example · exercise</small></span>{unlocked ? <ChevronRight size={15} /> : <Lock size={14} />}</button> })}</div><button className="run-button path-cta" onClick={() => openLesson(0)}><BookOpen size={15} /> Start {selected} course</button></div><div className="study-tip"><div className="tip-icon"><Sparkles size={17} /></div><span className="card-kicker">HOW FOCUS WORKS</span><h3>Every lesson ends at the moment code becomes understandable.</h3><p>Read the explanation, study the worked example, pass the exercise, then continue to the next concept.</p>{course.levels && <CurriculumOverview levels={course.levels} />}<button className="text-action" onClick={() => openLesson(0)}>Start the course <ArrowUpRight size={14} /></button></div></div></section>
 }
 
 function LessonDetail({ language, lessonIndex, onBack, onNext, onOpenVisualizer, progress }) {
@@ -301,7 +305,7 @@ function LessonDetail({ language, lessonIndex, onBack, onNext, onOpenVisualizer,
   return <section className="lesson-shell"><button className="back-link" onClick={onBack}><ChevronRight size={15} /> All learning paths</button><div className="lesson-hero"><div><span className="card-kicker">{lesson.kicker}</span><h1>{lesson.title}</h1><p>{lesson.description}</p></div><div className="lesson-hero-mark language-mark gold">{language.mark}</div></div><div className="lesson-columns"><article className="lesson-content"><div className="lesson-section"><span className="card-kicker">TODAY’S OBJECTIVES</span><h2>By the end of this lesson, you will be able to…</h2>{lesson.objectives.map((objective) => <div className="objective" key={objective}><CheckCircle2 size={17} /><span>{objective}</span></div>)}</div><div className="lesson-section"><span className="card-kicker">THE IDEA</span><h2>{lesson.title}</h2><p>{lesson.explanation}</p><div className="concept-code"><span>CODE</span><code>{lesson.code.split('\n').map((line, index) => <React.Fragment key={`${line}-${index}`}>{index > 0 && <br />}{index === Math.min(1, lesson.code.split('\n').length - 1) ? <b>{line}</b> : line}</React.Fragment>)}</code><div className="concept-state"><small>STATE SNAPSHOT</small><strong>{lessonIndex === 0 ? 'score' : 'step'} <i>{lessonIndex + 1}</i></strong></div></div></div><div className="lesson-section exercise-section"><span className="card-kicker">GUIDED EXERCISE</span><h2>See this lesson in motion</h2><p>Open the visualizer with this lesson’s code already loaded. You can step forward, inspect variables, and edit the example.</p><button className="run-button" onClick={() => onOpenVisualizer(lesson.code)}><Zap size={15} fill="currentColor" /> Visualize this lesson</button></div><div className="lesson-navigation"><button className="back-link" onClick={onBack}>Exit lesson</button>{lessonIndex === lessons.length - 1 ? <button className="run-button" onClick={onBack}><Trophy size={15} /> Finish learning path</button> : <button className="run-button" onClick={onNext}>Next lesson <ArrowUpRight size={15} /></button>}</div></article><aside className="lesson-sidebar"><div className="lesson-progress-card"><span className="card-kicker">YOUR PROGRESS</span><strong>{completion}%</strong><div className="progress-track"><div style={{ width: `${completion}%` }}></div></div><span>Lesson {lessonIndex + 1} of {lessons.length}</span></div><div className="lesson-sidebar-card"><span className="card-kicker">UP NEXT</span><h3>{lessonIndex === lessons.length - 1 ? 'Path complete' : lessons[lessonIndex + 1].title}</h3><p>{lessonIndex === lessons.length - 1 ? 'You have reached the end of the Python foundations path.' : 'Continue when you are ready for the next concept.'}</p></div></aside></div></section>
 }
 
-function explainLine(line, snapshot) {
+function describeLine(line, snapshot) {
   const source = line.trim()
   const variables = snapshot.values.map((item) => item.name).join(', ') || 'no variables yet'
   if (!source) return { title: 'Blank line', body: 'This line has no executable instruction. Python keeps the program position here while preserving the current state.', state: `Current state: ${variables}.` }
@@ -316,6 +320,43 @@ function explainLine(line, snapshot) {
   if (/^[\w.]+\s*(=|\+=|-=|\*=|\/=)/.test(source)) return { title: 'Change program state', body: 'This line evaluates the expression on the right and binds the result to the name on the left. With a compound assignment, the old value participates in calculating the new one.', state: `After this line, inspect: ${variables}.` }
   if (/\w+\s*\(/.test(source)) return { title: 'Call behavior', body: 'This line evaluates its arguments and calls a function or method. A function call may create a new stack frame, change state, and return a value to this line.', state: `The active stack is ${snapshot.stack.join(' → ')}.` }
   return { title: 'Execute this statement', body: 'Python evaluates this line from left to right according to the language rules. Look for values being read, operations being performed, and names or objects that may change.', state: `At this moment the visible variables are ${variables}.` }
+}
+
+function snapshotValues(snapshot) {
+  return new Map((snapshot?.values || []).map((item) => [item.name, item.value]))
+}
+
+function explainTransition(line, snapshot, nextSnapshot) {
+  if (!nextSnapshot) return 'This is the last captured step, so there is no later state to compare yet.'
+  const before = snapshotValues(snapshot)
+  const after = snapshotValues(nextSnapshot)
+  const changes = []
+  after.forEach((value, name) => {
+    if (!before.has(name)) changes.push(`${name} was created with ${value}`)
+    else if (before.get(name) !== value) changes.push(`${name} changed from ${before.get(name)} to ${value}`)
+  })
+  before.forEach((value, name) => {
+    if (!after.has(name)) changes.push(`${name} left the current scope`)
+  })
+  const source = line.trim()
+  const assignment = source.match(/^([A-Za-z_]\w*)\s*(\+=|-=|\*=|\/=|=)\s*(.+)$/)
+  if (assignment && changes.length) {
+    const [, name, operator, expression] = assignment
+    const oldValue = before.get(name)
+    const readableExpression = expression.replace(/\b[A-Za-z_]\w*\b/g, (token) => before.get(token) ?? token)
+    if (operator === '=') return `${name} received the result of ${readableExpression}; ${changes.join(', ')}.`
+    return `Python used ${oldValue ?? 'the current value'} with ${operator} ${readableExpression}; ${changes.join(', ')}.`
+  }
+  if (/^for\s+/.test(source) && changes.length) return `The loop selected its next item, so ${changes.join(', ')}.`
+  if (/^(if|elif|else|while)\b/.test(source)) {
+    const nextLine = nextSnapshot.label.trim()
+    return `Python evaluated this branch and continued at “${nextLine || 'the next captured line'}”.${changes.length ? ` ${changes.join(', ')}.` : ''}`
+  }
+  return changes.length ? `${changes.join(', ')}.` : 'The next step keeps the visible state unchanged; execution moved to the next instruction.'
+}
+
+function explainLine(line, snapshot, nextSnapshot) {
+  return { ...describeLine(line, snapshot), reason: explainTransition(line, snapshot, nextSnapshot) }
 }
 
 function normalizeOutput(value) {
@@ -341,7 +382,8 @@ function App() {
   const [checkingPrediction, setCheckingPrediction] = useState(false)
   const canManagePlatform = canAccessAdmin(user)
   const snapshot = steps[step] || steps[0]
-  const lineGuide = explainLine(snapshot.label, snapshot)
+  const nextSnapshot = steps[step + 1]
+  const lineGuide = explainLine(snapshot.label, snapshot, nextSnapshot)
   const lines = useMemo(() => code.split('\n'), [code])
 
   useEffect(() => {
@@ -374,6 +416,14 @@ function App() {
   }, [running, step, steps.length])
 
   const move = (delta) => setStep((current) => Math.min(Math.max(current + delta, 0), steps.length - 1))
+  const loadExample = (nextLanguage = language) => {
+    setCode(nextLanguage === 'go' ? goExample : example)
+    setStep(0)
+    setStatus('Demo trace loaded')
+    setErrorHint('')
+    setPrediction('')
+    setPredictionFeedback('')
+  }
   const runTrace = async () => {
     setRunning(true)
     setErrorHint('')
@@ -449,7 +499,7 @@ function App() {
     setAdminMode(false)
     setActiveView('dashboard')
   }
-  const openVisualizer = (visualizerCode = example, visualizerLanguage = 'python') => { const inferredLanguage = visualizerCode.trimStart().startsWith('package main') ? 'go' : visualizerLanguage; setCode(visualizerCode); setLanguage(inferredLanguage); setStep(0); setActiveView('visualizer') }
+  const openVisualizer = (visualizerCode = example, visualizerLanguage = 'python') => { const inferredLanguage = visualizerCode.trimStart().startsWith('package main') ? 'go' : visualizerLanguage; setCode(visualizerCode); setLanguage(inferredLanguage); setStep(0); setPrediction(''); setPredictionFeedback(''); setActiveView('visualizer') }
   useEffect(() => {
     if (activeView === 'admin' && !canManagePlatform) {
       setActiveView('dashboard')
@@ -469,11 +519,11 @@ function App() {
     {activeView === 'visualizer' && <>
     <section className="workspace-header">
       <div><p className="eyebrow">CODE EXECUTION VISUALIZER</p><h1>See your code think.</h1><p className="subtitle">Trace every decision, variable, and function call as your program runs.</p></div>
-      <label className="language-select"><Code2 size={17} /><select aria-label="Programming language" value={language} onChange={(event) => { const next = event.target.value; setLanguage(next); setCode(next === 'go' ? goExample : example); setStep(0); setStatus('Demo trace loaded'); setErrorHint('') }}><option value="python">Python</option><option value="go">Go</option></select><ChevronDown size={16} /></label>
+      <label className="language-select"><Code2 size={17} /><select aria-label="Programming language" value={language} onChange={(event) => { const next = event.target.value; setLanguage(next); loadExample(next) }}><option value="python">Python</option><option value="go">Go</option></select><ChevronDown size={16} /></label>
     </section>
     <section className="visualizer">
       <div className="panel editor-panel">
-        <div className="panel-heading"><span>EDITOR</span><button className="reset-button" onClick={() => setCode(example)}><RotateCcw size={14} /> Reset</button></div>
+        <div className="panel-heading"><span>EDITOR</span><button className="reset-button" onClick={() => loadExample()}><RotateCcw size={14} /> Reset</button></div>
         <div className="editor-body"><div className="line-numbers">{lines.map((_, index) => <span className={index + 1 === snapshot.line ? 'active-number' : ''} key={index}>{index + 1}</span>)}</div><textarea spellCheck="false" value={code} onChange={(event) => setCode(event.target.value)} /></div>
         <div className="editor-footer"><button className="run-button" onClick={runTrace} disabled={running}><Play size={15} fill="currentColor" /> {running ? 'Tracing…' : 'Run visualization'}</button><button className="predict-button" onClick={() => { setPredictionOpen((open) => !open); setPredictionFeedback('') }}>Predict output</button><span className="shortcut">{status}</span>{errorHint && <span className="trace-error-hint"><strong>Why:</strong> {errorHint}</span>}</div>
         {predictionOpen && <div className="prediction-card"><div><span className="card-kicker">ACTIVE RECALL</span><strong>What will this program print?</strong><small>Write the output before running the trace. Separate multiple lines with spaces or new lines.</small></div><textarea value={prediction} onChange={(event) => { setPrediction(event.target.value); setPredictionFeedback('') }} placeholder="Your predicted output" rows={2} /><div className="prediction-actions"><button className="run-button" onClick={checkPrediction} disabled={checkingPrediction}>{checkingPrediction ? 'Checking…' : 'Check prediction'}</button>{predictionFeedback && <span className={predictionFeedback.startsWith('Correct') ? 'prediction-correct' : 'prediction-feedback'}>{predictionFeedback}</span>}</div></div>}
@@ -481,7 +531,7 @@ function App() {
       <div className="panel state-panel">
         <div className="panel-heading"><span>PROGRAM STATE</span><span className="step-count">STEP {step + 1} <i>/</i> {steps.length}</span></div>
         <div className="current-line"><div className="pulse"></div><div><span className="muted-label">CURRENTLY EXECUTING</span><code>{snapshot.label}</code></div></div>
-        <div className="line-guide"><div className="line-guide-heading"><span className="muted-label">LINE GUIDE</span><strong>{lineGuide.title}</strong></div><p>{lineGuide.body}</p><small>{lineGuide.state}</small></div>
+        <div className="line-guide"><div className="line-guide-heading"><span className="muted-label">LINE GUIDE</span><strong>{lineGuide.title}</strong></div><p>{lineGuide.body}</p><small>{lineGuide.state}</small><div className="line-reason"><span>WHY THIS HAPPENED</span><p>{lineGuide.reason}</p></div></div>
         <div className="state-section"><div className="section-title"><span>VARIABLES</span><span className="frame-name">{snapshot.stack.at(-1)}</span></div>{snapshot.values.map((item) => <div className="variable" key={item.name}><span className="variable-name">{item.name}</span><span className="variable-value">{item.value}</span><span className="variable-type">{item.type}</span></div>)}</div>
         <div className="state-section stack-section"><div className="section-title"><span>CALL STACK</span><span className="frame-name">{snapshot.stack.length} frames</span></div>{snapshot.stack.slice().reverse().map((frame, index) => <div className={`stack-frame ${index === 0 ? 'selected' : ''}`} key={`${frame}-${index}`}><ChevronRight size={15} /><span>{frame}</span>{index === 0 && <span className="frame-line">line {snapshot.line}</span>}</div>)}</div>
       </div>

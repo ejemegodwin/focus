@@ -163,7 +163,14 @@ const pythonCode = {
 const tracks = {
   Python: {
     mark: 'Py', color: 'gold',
-    description: '49 guided lessons from Python zero-to-one orientation through testing, concurrency, and a capstone.',
+    description: '50 guided lessons across Python foundations, core language skills, intermediate tools, advanced practices, and a real-world capstone.',
+    levels: [
+      { title: 'Level 1 · Python Foundations', start: 0, end: 12, checkpoint: 'Checkpoint: combine values, types, input, operators, and conditions.' },
+      { title: 'Level 2 · Core Python', start: 12, end: 31, checkpoint: 'Checkpoint: build a small grade-book with a loop, a data structure, and a function.' },
+      { title: 'Level 3 · Intermediate Python', start: 31, end: 41, checkpoint: 'Checkpoint: build a persistent contact book with JSON, files, exceptions, and a class.' },
+      { title: 'Level 4 · Advanced Python', start: 41, end: 49, checkpoint: 'Checkpoint: create a typed CLI tool that handles errors and records useful logs.' },
+      { title: 'Level 5 · Real-World Python', start: 49, end: 50, checkpoint: 'Capstone: turn the CLI tracker into a portfolio-ready project.' },
+    ],
     lessons: pythonTitles.map((title) => makeLesson('Python', title, pythonExplanations[title] || title + ' is introduced with a clear mental model, then connected to a real program. Trace the example, change one input, and observe which state changes and why.', pythonCode[title])),
   },
 }

@@ -14,6 +14,8 @@ Focus is a code-execution visualizer for teaching programming through program st
 - Captures program output and runtime errors.
 - Includes an active-recall mode where learners predict program output before
   checking the execution trace.
+- Explains why each step changed the visible state by comparing consecutive
+  Python snapshots.
 
 ### Learning paths
 
