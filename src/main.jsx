@@ -350,7 +350,7 @@ function explainTransition(line, snapshot, nextSnapshot) {
   if (/^for\s+/.test(source) && changes.length) return `The loop selected its next item, so ${changes.join(', ')}.`
   if (/^(if|elif|else|while)\b/.test(source)) {
     const nextLine = nextSnapshot.label.trim()
-    return `Python evaluated this branch and continued at “${nextLine || 'the next captured line'}”.${changes.length ? ` ${changes.join(', ')}.` : ''}`
+    return `The program evaluated this branch and continued at “${nextLine || 'the next captured line'}”.${changes.length ? ` ${changes.join(', ')}.` : ''}`
   }
   return changes.length ? `${changes.join(', ')}.` : 'The next step keeps the visible state unchanged; execution moved to the next instruction.'
 }
@@ -384,6 +384,9 @@ function App() {
   const snapshot = steps[step] || steps[0]
   const nextSnapshot = steps[step + 1]
   const lineGuide = explainLine(snapshot.label, snapshot, nextSnapshot)
+  const transitionExplanation = language === 'python'
+    ? lineGuide.reason
+    : 'Why-this-happened explanations need variable snapshots. Go tracing currently records executed lines and call positions only, so this guidance is not available yet.'
   const lines = useMemo(() => code.split('\n'), [code])
 
   useEffect(() => {
@@ -531,7 +534,7 @@ function App() {
       <div className="panel state-panel">
         <div className="panel-heading"><span>PROGRAM STATE</span><span className="step-count">STEP {step + 1} <i>/</i> {steps.length}</span></div>
         <div className="current-line"><div className="pulse"></div><div><span className="muted-label">CURRENTLY EXECUTING</span><code>{snapshot.label}</code></div></div>
-        <div className="line-guide"><div className="line-guide-heading"><span className="muted-label">LINE GUIDE</span><strong>{lineGuide.title}</strong></div><p>{lineGuide.body}</p><small>{lineGuide.state}</small><div className="line-reason"><span>WHY THIS HAPPENED</span><p>{lineGuide.reason}</p></div></div>
+        <div className="line-guide"><div className="line-guide-heading"><span className="muted-label">LINE GUIDE</span><strong>{lineGuide.title}</strong></div><p>{lineGuide.body}</p><small>{lineGuide.state}</small><div className="line-reason"><span>{language === 'python' ? 'WHY THIS HAPPENED' : 'GO TRACE LIMITATION'}</span><p>{transitionExplanation}</p></div></div>
         <div className="state-section"><div className="section-title"><span>VARIABLES</span><span className="frame-name">{snapshot.stack.at(-1)}</span></div>{snapshot.values.map((item) => <div className="variable" key={item.name}><span className="variable-name">{item.name}</span><span className="variable-value">{item.value}</span><span className="variable-type">{item.type}</span></div>)}</div>
         <div className="state-section stack-section"><div className="section-title"><span>CALL STACK</span><span className="frame-name">{snapshot.stack.length} frames</span></div>{snapshot.stack.slice().reverse().map((frame, index) => <div className={`stack-frame ${index === 0 ? 'selected' : ''}`} key={`${frame}-${index}`}><ChevronRight size={15} /><span>{frame}</span>{index === 0 && <span className="frame-line">line {snapshot.line}</span>}</div>)}</div>
       </div>

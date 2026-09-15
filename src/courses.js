@@ -76,7 +76,9 @@ const conceptRequirements = {
   'C++': { 'Control flow': ['if'], Functions: ['int main'], 'Arrays & strings': ['string'], 'References & pointers': ['&'], Classes: ['class'], Inheritance: [':'], Templates: ['template'], 'STL containers': ['vector'], 'Algorithms & iterators': ['algorithm'], 'Memory management': ['unique_ptr'], Exceptions: ['try'], 'Files & streams': ['fstream'], Concurrency: ['thread'], Testing: ['TEST'], Performance: ['chrono'] },
 }
 
-const makeLesson = (language, title, explanation, code = exampleCode[language]) => ({
+const makeLesson = (language, title, explanation, code = exampleCode[language]) => {
+  const normalizedCode = code.replaceAll('\\n', '\n')
+  return {
   title,
   summary: 'Understand ' + title.toLowerCase() + ' through a guided example.',
   explanation: explanation + ' This is useful beyond this small example: it gives you a way to predict behavior in larger programs, explain a bug to another developer, and choose a design that keeps state visible. When you meet this idea in a new problem, first name the values involved, then identify the operation that changes them, and finally check what the caller or next line can observe.',
@@ -88,7 +90,7 @@ const makeLesson = (language, title, explanation, code = exampleCode[language]) 
   pitfalls: 'Do not try to memorize the syntax first. Focus on what state exists before the line runs and what state exists after it.',
   exercise: {
     prompt: 'Modify the example so it demonstrates the idea in a new case. Change at least one input or operation, then predict the result before checking your work.',
-    starter: code,
+    starter: normalizedCode,
     requiredTokens: language === 'Python' ? (pythonRequirements[title] || []) : [...languageRequirements[language], ...(conceptRequirements[language]?.[title] || [])],
     minOccurrences: [],
     maxOccurrences: title === 'How a Python program runs' ? [{ token: 'print', count: 3 }] : [],
@@ -103,13 +105,14 @@ const makeLesson = (language, title, explanation, code = exampleCode[language]) 
       skipOutputCheck: true,
     } : {}),
   },
-  code,
+  code: normalizedCode,
   objectives: [
     'Explain the core idea in your own words.',
     'Trace the example one state change at a time.',
     'Modify the example and predict the new output.',
   ],
-})
+  }
+}
 
 const pythonTitles = [
   'Start Python: What is Python?', 'How a Python program runs', 'Your first Python program', 'Reading Python syntax & comments',
@@ -159,6 +162,69 @@ const pythonCode = {
   'Classes & objects': 'class Counter:\\n    def __init__(self): self.value = 0\\n    def increment(self): self.value += 1\\ncounter = Counter()\\ncounter.increment()\\nprint(counter.value)',
   'Testing with unittest': 'import unittest\\ndef add(a, b): return a + b\\nclass AddTests(unittest.TestCase):\\n    def test_sum(self): self.assertEqual(add(2, 3), 5)',
 }
+
+Object.assign(pythonExplanations, {
+  'Booleans & comparisons': 'Comparisons produce True or False, which conditions use to decide what to do next.',
+  'Input & output': 'input returns text from a person; convert it when you need a number, then print a useful response.',
+  'Conversions & formatting': 'Functions such as int and str change a value into the type an operation needs, while f-strings make output readable.',
+  'Truthiness & guard clauses': 'Empty collections, zero, None, and False are false-like. A guard clause handles a missing value before the main work.',
+  'break, continue & pass': 'break ends a loop, continue skips its current iteration, and pass intentionally leaves a block empty.',
+  'Nested loops': 'For every outer value, Python completes the full inner loop before advancing the outer loop.',
+  'Lists': 'Lists are ordered and mutable, so you can read or replace one item by its zero-based index.',
+  'List methods': 'Methods such as append and pop add or remove items while keeping the list as one shared object.',
+  'Slicing sequences': 'A slice selects a range of a sequence without changing the original; its end position is excluded.',
+  'List comprehensions': 'A comprehension is a compact loop that creates a new list from each source value.',
+  'Tuples & unpacking': 'Tuples keep an ordered group of values fixed, and unpacking gives each position a descriptive name.',
+  'Dictionaries': 'Dictionaries store values under meaningful keys, which makes records easier to read than positional lists.',
+  'Sets': 'Sets store unique values and support operations such as intersection for finding shared members.',
+  'Dictionary & set comprehensions': 'Comprehensions can build dictionaries and sets directly from a transformation loop.',
+  'Parameters & return values': 'Parameters give a function input and return sends its computed result back to the caller.',
+  'Lambda, sorted & key functions': 'A lambda is a small unnamed function, often used as the key that tells sorted how to compare values.',
+  'Iterators & generators': 'A generator yields one result at a time, so a program can process a sequence without building it all at once.',
+  'Custom exceptions & validation': 'Raise a clear exception when input breaks a rule, keeping invalid data out of the rest of the program.',
+  'CSV & JSON data': 'CSV represents rows and columns; JSON represents nested data. Python can convert both into normal values.',
+  'Modules & imports': 'Imports make names from another module available so you can reuse tested functionality.',
+  'Packages & virtual environments': 'Packages group modules, while virtual environments isolate one project’s installed dependencies.',
+  'Inheritance & composition': 'Inheritance specializes a class; composition builds an object from other objects with separate responsibilities.',
+  'Dataclasses & properties': 'Dataclasses reduce boilerplate for data-focused classes, while properties control access to an attribute.',
+  'Dunder methods & protocols': 'Double-underscore methods let an object work with Python operations such as print, iteration, and comparison.',
+  'Type hints': 'Type hints document expected inputs and return values so people and tools can catch mismatches earlier.',
+  'Debugging & logging': 'Logging records useful program events without leaving permanent print calls in the program logic.',
+  'Regular expressions': 'Regular expressions describe text patterns for searching, extracting, and validating text.',
+  'Dates & time': 'datetime values represent dates and times safely, without relying on fragile string arithmetic.',
+  'Command-line programs': 'Command-line arguments configure a program when it starts; argparse provides names, defaults, and help text.',
+  'Concurrency with threading': 'Threads can overlap independent waiting tasks, but shared state needs deliberate coordination.',
+  'Performance & complexity': 'Performance depends on how work grows with input; a set can make membership checks much faster than a list.',
+  'Capstone: build a CLI tracker': 'The capstone combines functions, structured data, validation, persistence, and a clear command-line interface.',
+})
+
+Object.assign(pythonCode, {
+  'Booleans & comparisons': 'score = 82\npassed = score >= 60\nprint(passed)', 'Input & output': 'name = "Mina"\nprint(f"Hello, {name}!")',
+  'Conversions & formatting': 'age = int("24")\nprint(f"Next year: {age + 1}")', 'Truthiness & guard clauses': 'items = []\nif not items:\n    print("Nothing to process")',
+  'break, continue & pass': 'for number in range(5):\n    if number == 2:\n        continue\n    print(number)', 'Nested loops': 'for row in ["A", "B"]:\n    for seat in [1, 2]:\n        print(row, seat)',
+  'Lists': 'colors = ["red", "blue"]\ncolors[1] = "gold"\nprint(colors)', 'List methods': 'tasks = ["read"]\ntasks.append("practice")\nprint(tasks.pop())',
+  'Slicing sequences': 'word = "Focus"\nprint(word[1:4])', 'List comprehensions': 'numbers = [1, 2, 3]\nprint([number ** 2 for number in numbers])',
+  'Tuples & unpacking': 'point = (10, 20)\nx, y = point\nprint(x + y)', 'Dictionaries': 'student = {"name": "Ada", "score": 8}\nstudent["score"] += 2\nprint(student["score"])',
+  'Sets': 'first = {"Ada", "Mina"}\nsecond = {"Mina", "Kai"}\nprint(first & second)', 'Dictionary & set comprehensions': 'scores = {"Ada": 4, "Mina": 7}\nprint({name: score * 2 for name, score in scores.items()})',
+  'Parameters & return values': 'def welcome(name, greeting="Hello"):\n    return f"{greeting}, {name}"\nprint(welcome("Mina"))', 'Lambda, sorted & key functions': 'names = ["Ada", "Mina", "Bo"]\nprint(sorted(names, key=lambda name: len(name)))',
+  'Iterators & generators': 'def countdown(start):\n    while start:\n        yield start\n        start -= 1\nprint(list(countdown(3)))', 'Custom exceptions & validation': 'def require_positive(value):\n    if value <= 0: raise ValueError("positive only")\n    return value\nprint(require_positive(3))',
+  'CSV & JSON data': 'import json\nrecord = {"name": "Ada", "score": 10}\nprint(json.dumps(record))', 'Modules & imports': 'import math\nprint(math.sqrt(81))',
+  'Packages & virtual environments': 'from pathlib import Path\nprint(Path("notes.txt").suffix)', 'Inheritance & composition': 'class Animal:\n    def speak(self): return "sound"\nclass Dog(Animal):\n    def speak(self): return "woof"\nprint(Dog().speak())',
+  'Dataclasses & properties': 'from dataclasses import dataclass\n@dataclass\nclass Student:\n    name: str\nprint(Student("Ada").name)', 'Dunder methods & protocols': 'class Score:\n    def __init__(self, value): self.value = value\n    def __str__(self): return f"Score: {self.value}"\nprint(Score(10))',
+  'Type hints': 'def add(left: int, right: int) -> int:\n    return left + right\nprint(add(2, 3))', 'Debugging & logging': 'import logging\nlogging.basicConfig(level=logging.INFO)\nlogging.info("Starting")\nprint(2 + 3)',
+  'Regular expressions': 'import re\nprint(re.findall(r"\\d+", "Order 42"))', 'Dates & time': 'from datetime import date\nprint(date(2026, 9, 15).isoformat())',
+  'Command-line programs': 'import argparse\nparser = argparse.ArgumentParser()\nparser.add_argument("--name", default="Learner")\nprint(parser.parse_args([]).name)', 'Concurrency with threading': 'from threading import Thread\ndef greet(): print("Hello")\nworker = Thread(target=greet)\nworker.start()\nworker.join()',
+  'Performance & complexity': 'seen = {"Ada", "Mina"}\nprint("Mina" in seen)', 'Capstone: build a CLI tracker': 'tasks = [{"title": "Trace code", "done": False}]\ntasks[0]["done"] = True\nprint(tasks)',
+})
+
+Object.assign(pythonCode, {
+  'Numbers & arithmetic': 'price = 12\nquantity = 3\ntotal = price * quantity\nprint(total)',
+  'Strings & text': 'first = "Focus"\nmessage = first.upper() + " helps"\nprint(message)',
+  'While loops': 'count = 3\nwhile count > 0:\n    print(count)\n    count -= 1',
+  'Scope & namespaces': 'message = "outside"\ndef show_message():\n    message = "inside"\n    print(message)\nshow_message()\nprint(message)',
+  'Files & paths': 'from pathlib import Path\npath = Path("notes.txt")\nprint(path.name)',
+  'Async programming': 'import asyncio\nasync def greet():\n    await asyncio.sleep(0)\n    return "Hello"\nprint(asyncio.run(greet()))',
+})
 
 const tracks = {
   Python: {
